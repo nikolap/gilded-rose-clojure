@@ -22,12 +22,14 @@
 (def filter-first (comp first filter))
 
 ;; I don't think we'll blow the stack here by testing...
-(defn recur-update-quality [items n]
+(defn recur-update-quality
+  [items n]
   (if (> n 0)
     (recur-update-quality (update-quality items) (dec n))
     items))
 
-(defn get-item [items item-name]
+(defn get-item
+  [items item-name]
   (filter-first #(= (:name %) item-name) items))
 
 (deftest tests
