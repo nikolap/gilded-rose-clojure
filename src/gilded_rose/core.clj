@@ -16,13 +16,19 @@
 (def ^:const max-quality 50)
 
 (defn update-sell-in
+  "Decrements the sell-in value for an item"
   [item]
   (update item :sell-in dec))
 
-(defn expired? [item]
+(defn expired?
+  "Checks to see if an item's sell-in value is less than 0. Use this function to check
+  after updating the sell-in"
+  [item]
   (< (:sell-in item) 0))
 
 (defn quality-regulator
+  "Regulates the updated quality of an item to ensure the value is within predefined min
+  and max limits"
   [quality]
   (cond
     (< quality min-quality) min-quality
@@ -30,12 +36,16 @@
     :else quality))
 
 (defn update-item-quality
+  "Updates an item's quality value using a function quality-update-fn and ensuring the new
+  quality is valid"
   [item quality-update-fn]
   (update item :quality
           (fn [q]
             (quality-regulator (quality-update-fn q)))))
 
 (defn declining-quality-updater
+  "Quality updater that decreases an item's quality normally, unless it is expired. If expired
+  then reduces it at twice the rate"
   [item rate]
   (update-item-quality item (fn [quality]
                               (if (expired? item)
@@ -43,11 +53,15 @@
                                 (- quality rate)))))
 
 (defn age-well-quality-updater
+  "Quality updater that increments an item's quality each tick"
   [item]
   (update-item-quality item (fn [quality]
                               (inc quality))))
 
 (defn pass-quality-updater
+  "Quality updater for passes. When expired, sets 0 as the new quality, otherwise it increments
+  it accordingly. If the the new sell-in is < 5 it increments quality by 3, if < 10 by 2,
+  otherwise just by one"
   [{:keys [sell-in] :as item}]
   (update-item-quality item (fn [quality]
                               (cond
@@ -57,8 +71,10 @@
                                 :else (inc quality)))))
 
 (defmulti item-updater
+          "Updates an item's sell-in and quality values accordingly given the type of item
+          it is. An item's type is determined by a lookup to the item-categories map. Each
+          item has a unique name that is stored there and lets the fn know what type it is"
           (fn [{:keys [name]}]
-            (get item-categories name)
             (get item-categories name)))
 
 (defmethod item-updater :regular
@@ -97,11 +113,14 @@
 ;; Note: using mapv in order to maintain vector format of original list... otherwise
 ;; I think regular map should do just fine
 (defn update-quality
+  "Updates the quality and sell-in values for the Gilded Rose's inventory"
   [inventory]
   (mapv item-updater inventory))
 
+;; Here be goblins
 (defn item [item-name, sell-in, quality]
   {:name item-name, :sell-in sell-in, :quality quality})
+;; /End here be goblins
 
 (defn update-current-inventory []
   (let [inventory
